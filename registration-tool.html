@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>报名信息整理工具</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --text: #1d1d1f;
+    --text-muted: #6e6e73;
+    --border: #d2d2d7;
+    --brand: #4b3fe3;
+    --brand-soft: #f2f7ff;
+    --brand-text: #1a1759;
+    --missing-bg: #fff8e1;
+    --missing-bd: #f0b400;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f0f10;
+      --surface: #1a1a1c;
+      --text: #e8e8ed;
+      --text-muted: #9a9aa0;
+      --border: #33333a;
+      --brand: #6054f1;
+      --brand-soft: #1a1759;
+      --brand-text: #cfd8ff;
+      --missing-bg: #3a2f10;
+      --missing-bd: #c98a00;
+      --shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "SF Pro Text", "PingFang SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 24px 16px 64px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; font-weight: 600; }
+  .sub { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: 15px; margin: 0 0 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  textarea {
+    width: 100%;
+    min-height: 180px;
+    resize: vertical;
+    font-family: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 13px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+  }
+  textarea:focus { border-color: var(--brand); }
+  input[type=text], input[type=password] {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+  }
+  input:focus { border-color: var(--brand); }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text-muted); }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px) { .grid3 { grid-template-columns: 1fr; } }
+  button {
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all .15s;
+  }
+  button:hover { border-color: var(--brand); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+  }
+  .btn-primary:hover { opacity: .9; border-color: var(--brand); }
+  .btn-ghost { background: transparent; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-danger:hover { border-color: #e8463a; color: #e8463a; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  details summary { cursor: pointer; font-weight: 500; user-select: none; }
+  details summary::marker { color: var(--brand); }
+  .status {
+    margin-top: 10px;
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: none;
+  }
+  .status.show { display: block; }
+  .status.ok { background: #e7f8ef; color: #0a7c44; }
+  .status.err { background: #fdeae8; color: #c0301f; }
+  .status.info { background: var(--brand-soft); color: var(--brand-text); }
+  @media (prefers-color-scheme: dark) {
+    .status.ok { background: #0d2a1c; color: #4ed09a; }
+    .status.err { background: #2c1410; color: #ff8a7a; }
+  }
+  .table-scroll { overflow-x: auto; margin-top: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; white-space: nowrap; }
+  th { background: var(--bg); font-weight: 600; position: sticky; top: 0; }
+  td[contenteditable]:focus { outline: 2px solid var(--brand); outline-offset: -2px; }
+  td.missing { background: var(--missing-bg); border-color: var(--missing-bd); }
+  td.missing::after { content: "缺"; font-size: 10px; color: var(--missing-bd); margin-left: 4px; }
+  .del-col { width: 40px; text-align: center; }
+  .empty { color: var(--text-muted); padding: 24px; text-align: center; }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-text);
+    margin-left: 6px;
+  }
+  .hint { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+  .stat { font-size: 13px; color: var(--text-muted); margin-top: 8px; }
+  kbd { font-family: var(--font-mono, monospace); font-size: 11px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>报名信息整理工具</h1>
+  <div class="sub">粘贴聊天里的报名文本 → AI 自动拆成表格 → 校对后导出 CSV / 复制到 Excel</div>
+
+  <div class="card">
+    <h2>① 粘贴报名文本 <button class="btn-sm btn-ghost" onclick="loadSample()">填入示例</button></h2>
+    <textarea id="input" placeholder="把聊天里复制的一大段报名信息粘贴到这里…&#10;例如：&#10;张三 三部 13800001111 报名羽毛球&#10;李四（小李）电话13900002222 二部 篮球，备注带个朋友&#10;王五:13900003333:一部:乒乓球"></textarea>
+    <div class="toolbar">
+      <button class="btn-primary" id="parseBtn" onclick="parseAll()">AI 解析</button>
+      <button onclick="parseRegex()">正则解析(离线)</button>
+      <button class="btn-ghost" onclick="document.getElementById('input').value='';DATA=[];COLS=[];renderTable();clearStatus()">清空</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>AI 接口设置 <span class="badge" id="cfgBadge">未配置</span></summary>
+      <div class="hint" style="margin:8px 0 14px">填一次会自动记住。兼容 OpenAI 格式（DeepSeek / Moonshot / OpenAI / 本地部署等均可）。未配置或调用失败时点"AI 解析"会自动退回正则。</div>
+      <div class="grid3">
+        <div class="field">
+          <label>API 地址（Base URL）</label>
+          <input type="text" id="apiBase" placeholder="https://api.deepseek.com">
+        </div>
+        <div class="field">
+          <label>API Key</label>
+          <input type="password" id="apiKey" placeholder="sk-...">
+        </div>
+        <div class="field">
+          <label>模型名</label>
+          <input type="text" id="apiModel" placeholder="deepseek-chat">
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="btn-sm btn-primary" onclick="saveConfig()">保存</button>
+        <button class="btn-sm btn-ghost" onclick="clearConfig()">清除</button>
+      </div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>② 预览校对 <span id="rowCount" class="badge" style="display:none"></span></h2>
+    <div class="hint">空单元格会标"缺"，可直接点进去改。可增删行/列。</div>
+    <div class="toolbar" style="margin-top:10px">
+      <button class="btn-sm" onclick="addRow()">+ 加一行</button>
+      <button class="btn-sm" onclick="addColumn()">+ 加一列</button>
+    </div>
+    <div class="table-scroll">
+      <table id="table"><tbody><tr><td class="empty">解析后会在这里显示表格</td></tr></tbody></table>
+    </div>
+    <div class="stat" id="stat"></div>
+  </div>
+
+  <div class="card">
+    <h2>③ 导出</h2>
+    <div class="toolbar">
+      <button class="btn-primary" onclick="exportCSV()">下载 CSV</button>
+      <button onclick="copyTSV()">复制为 TSV（粘到 Excel 自动分列）</button>
+    </div>
+    <div class="hint">CSV 带中文 BOM，Excel 双击打开不乱码。</div>
+  </div>
+</div>
+
+<script>
+const PREF_COLS = ["姓名","昵称","部门","工号","电话","手机","邮箱","报名项","报名项目","备注"];
+
+let DATA = [];
+let COLS = [];
+
+const $ = id => document.getElementById(id);
+const input = $("input");
+const statusEl = $("status");
+const tableEl = $("table");
+
+function showStatus(msg, type) {
+  statusEl.textContent = msg;
+  statusEl.className = "status show " + (type || "info");
+}
+function clearStatus() { statusEl.className = "status"; }
+
+/* ---------- 配置 ---------- */
+function loadConfig() {
+  try {
+    const c = JSON.parse(localStorage.getItem("reg_cfg") || "{}");
+    $("apiBase").value = c.base || "";
+    $("apiKey").value = c.key || "";
+    $("apiModel").value = c.model || "";
+    updateBadge(!!(c.base && c.key && c.model));
+  } catch(e) {}
+}
+function saveConfig() {
+  const c = { base: $("apiBase").value.trim(), key: $("apiKey").value.trim(), model: $("apiModel").value.trim() };
+  localStorage.setItem("reg_cfg", JSON.stringify(c));
+  updateBadge(!!(c.base && c.key && c.model));
+  showStatus("已保存接口配置", "ok");
+}
+function clearConfig() {
+  localStorage.removeItem("reg_cfg");
+  ["apiBase","apiKey","apiModel"].forEach(id => $(id).value = "");
+  updateBadge(false);
+  showStatus("已清除接口配置", "info");
+}
+function updateBadge(ok) {
+  $("cfgBadge").textContent = ok ? "已配置" : "未配置";
+}
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem("reg_cfg") || "{}"); } catch(e) { return {}; }
+}
+function normalizeUrl(base) {
+  let u = (base || "").trim().replace(/\/+$/, "");
+  if (!u) return "";
+  if (/\/chat\/completions$/.test(u)) return u;
+  if (/\/v1$/.test(u)) return u + "/chat/completions";
+  return u + "/v1/chat/completions";
+}
+
+/* ---------- 示例 ---------- */
+function loadSample() {
+  input.value = [
+    "报名接龙：",
+    "1. 张三 三部 13800001111 报名羽毛球",
+    "2. 李四（小李）电话13900002222 二部 篮球，备注带个朋友",
+    "3. 王五:13900003333:一部:乒乓球",
+    "4. 赵六 一部 13700004444 报名羽毛球，备注自备球拍",
+    "5. 孙七 邮箱sun@example.com 三部 报名台球"
+  ].join("\n");
+}
+
+/* ---------- Prompt ---------- */
+function buildPrompt(text) {
+  return `你是一个信息抽取助手。从下面的聊天记录里，提取每个人的报名信息，输出 JSON 数组。
+字段尽量对齐这些（缺的填空字符串 ""）：姓名、昵称、部门、工号、电话、手机、邮箱、报名项、备注。
+发现额外字段也保留。只输出 JSON 数组，不要解释、不要代码块标记。
+
+示例输入：
+报名接龙：
+1. 张三 三部 13800001111 报名羽毛球
+2. 李四（小李）电话13900002222 二部 篮球，备注带个朋友
+
+示例输出：
+[{"姓名":"张三","昵称":"","部门":"三部","工号":"","电话":"13800001111","手机":"","邮箱":"","报名项":"羽毛球","备注":""},{"姓名":"李四","昵称":"小李","部门":"二部","工号":"","电话":"13900002222","手机":"","邮箱":"","报名项":"篮球","备注":"带个朋友"}]
+
+输入：
+${text}
+
+输出：`;
+}
+
+function extractJSON(content) {
+  if (!content) return [];
+  let s = content.trim();
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) s = fence[1].trim();
+  const start = s.indexOf("[");
+  const end = s.lastIndexOf("]");
+  if (start === -1 || end === -1 || end < start) {
+    const objStart = s.indexOf("{");
+    const objEnd = s.lastIndexOf("}");
+    if (objStart !== -1 && objEnd > objStart) {
+      try { return [JSON.parse(s.slice(objStart, objEnd + 1))]; } catch(e) {}
+    }
+    return [];
+  }
+  try { return JSON.parse(s.slice(start, end + 1)); }
+  catch(e) {
+    const cleaned = s.slice(start, end + 1).replace(/,\s*([}\]])/g, "$1");
+    try { return JSON.parse(cleaned); } catch(e2) { return []; }
+  }
+}
+
+/* ---------- AI 解析 ---------- */
+async function parseWithAI(text) {
+  const cfg = getConfig();
+  const url = normalizeUrl(cfg.base);
+  if (!url || !cfg.key || !cfg.model) throw new Error("NO_CFG");
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.key },
+    body: JSON.stringify({
+      model: cfg.model,
+      messages: [{ role: "user", content: buildPrompt(text) }],
+      temperature: 0
+    })
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    throw new Error("接口返回 " + res.status + (t ? "：" + t.slice(0, 200) : ""));
+  }
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content || "";
+  const arr = extractJSON(content);
+  if (!arr.length) throw new Error("模型未返回可解析的 JSON");
+  return arr.map(o => { const c = {}; for (const k in o) c[k] = String(o[k] ?? "").trim(); return c; });
+}
+
+/* ---------- 正则解析（离线兜底） ---------- */
+function normalizeKey(k) {
+  const m = { "名字":"姓名", "手机":"电话", "联系方式":"电话", "报名项目":"报名项", "项目":"报名项" };
+  return m[k] || k;
+}
+function parseRegexRaw(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const out = [];
+  for (const line of lines) {
+    if (/^(报名|接龙|名单|序号|序号)[:：]/.test(line) || /^第?[一二三四五六七八九十\d]+[、.]\s*$/.test(line)) {
+      if (/[\u4e00-\u9fa5]{2,}\d{3,}/.test(line)) { /* 含名字+数字，继续解析 */ }
+      else continue;
+    }
+    const obj = {};
+    const phone = line.match(/1[3-9]\d{9}/);
+    if (phone) obj["电话"] = phone[0];
+    const email = line.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+    if (email) obj["邮箱"] = email[0];
+    const kv = /(姓名|名字|昵称|部门|工号|电话|手机|联系方式|邮箱|报名|报名项目|项目|备注)[:：]\s*([^,，;；\s]+)/g;
+    let m;
+    while ((m = kv.exec(line)) !== null) obj[normalizeKey(m[1])] = m[2].trim();
+    if (!Object.keys(obj).length) {
+      let body = line.replace(/^\s*第?[一二三四五六七八九十\d]+[、.、]\s*/, "").replace(/^[\d]+[.、]\s*/, "");
+      if (!body) continue;
+      const tokens = body.split(/[\s,，]+/).filter(Boolean);
+      if (tokens.length) obj["姓名"] = tokens[0];
+      for (const t of tokens.slice(1)) {
+        if (/^1[3-9]\d{9}$/.test(t)) continue;
+        if (/@/.test(t)) { obj["邮箱"] = t; continue; }
+        if (/^(报名|项目)/.test(t) || /(球|跑|泳|舞|棋|赛)/.test(t)) {
+          obj["报名项"] = (obj["报名项"] ? obj["报名项"] + " " : "") + t.replace(/^报名/, "");
+        } else if (!obj["部门"] && /[一二三四五六七八九十部处组中心]/.test(t)) {
+          obj["部门"] = t;
+        } else {
+          obj["备注"] = (obj["备注"] ? obj["备注"] + " " : "") + t;
+        }
+      }
+    }
+    if (Object.keys(obj).length) out.push(obj);
+  }
+  return out;
+}
+
+/* ---------- 主流程 ---------- */
+async function parseAll() {
+  const text = input.value.trim();
+  if (!text) { showStatus("请先粘贴报名文本", "err"); return; }
+  const btn = $("parseBtn");
+  btn.disabled = true; btn.textContent = "解析中…"; clearStatus();
+  try {
+    const arr = await parseWithAI(text);
+    setData(arr);
+    showStatus("AI 解析完成，共 " + arr.length + " 条。", "ok");
+  } catch(e) {
+    if (e.message === "NO_CFG") {
+      showStatus("未配置 AI 接口，已自动用正则解析。可在「AI 接口设置」填入后用 AI 解析。", "info");
+    } else {
+      showStatus("AI 解析失败：" + e.message + "，已退回正则解析。", "err");
+    }
+    const arr = parseRegexRaw(text);
+    setData(arr);
+  } finally {
+    btn.disabled = false; btn.textContent = "AI 解析";
+  }
+}
+function parseRegex() {
+  const text = input.value.trim();
+  if (!text) { showStatus("请先粘贴报名文本", "err"); return; }
+  const arr = parseRegexRaw(text);
+  setData(arr);
+  showStatus("正则解析完成，共 " + arr.length + " 条。", "ok");
+}
+
+/* ---------- 表格 ---------- */
+function computeCols(rows) {
+  const set = new Set();
+  rows.forEach(r => Object.keys(r).forEach(k => set.add(k)));
+  const ordered = [];
+  PREF_COLS.forEach(c => { if (set.has(c)) { ordered.push(c); set.delete(c); } });
+  set.forEach(c => ordered.push(c));
+  return ordered;
+}
+function setData(arr) {
+  DATA = arr;
+  COLS = computeCols(arr);
+  renderTable();
+}
+function renderTable() {
+  if (!DATA.length) {
+    tableEl.innerHTML = '<tbody><tr><td class="empty">解析后会在这里显示表格</td></tr></tbody>';
+    $("rowCount").style.display = "none";
+    $("stat").textContent = "";
+    return;
+  }
+  $("rowCount").style.display = "inline-block";
+  $("rowCount").textContent = DATA.length + " 人";
+  let missing = 0;
+  let html = '<thead><tr>';
+  COLS.forEach((c, i) => {
+    html += `<th>${escapeHtml(c)}<span class="del-col btn-sm btn-ghost btn-danger" style="cursor:pointer;margin-left:4px" onclick="delCol(${i})" title="删列">×</span></th>`;
+  });
+  html += '<th class="del-col">操作</th></tr></thead><tbody>';
+  DATA.forEach((row, ri) => {
+    html += "<tr>";
+    COLS.forEach(c => {
+      const v = row[c] || "";
+      if (!v) missing++;
+      html += `<td${v ? "" : ' class="missing"'}${v ? ` data-col="${c}"` : ""} contenteditable="true" data-row="${ri}" data-col="${c}">${escapeHtml(v)}</td>`;
+    });
+    html += `<td class="del-col"><button class="btn-sm btn-ghost btn-danger" onclick="delRow(${ri})">删行</button></td></tr>`;
+  });
+  html += "</tbody>";
+  tableEl.innerHTML = html;
+  $("stat").textContent = missing ? `提示：有 ${missing} 个空单元格（标"缺"），点进去补上即可。` : "全部单元格已填充。";
+  tableEl.querySelectorAll("td[contenteditable]").forEach(td => {
+    td.addEventListener("blur", onCellEdit);
+  });
+}
+function onCellEdit(e) {
+  const td = e.currentTarget;
+  const ri = +td.dataset.row;
+  const col = td.dataset.col;
+  if (!COLS.includes(col)) return;
+  DATA[ri][col] = td.textContent.trim();
+  const empty = !DATA[ri][col];
+  td.className = empty ? "missing" : "";
+  let missing = 0;
+  DATA.forEach(r => COLS.forEach(c => { if (!r[c]) missing++; }));
+  $("stat").textContent = missing ? `提示：有 ${missing} 个空单元格（标"缺"），点进去补上即可。` : "全部单元格已填充。";
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function addRow() {
+  if (!COLS.length) COLS = ["姓名"];
+  const o = {}; COLS.forEach(c => o[c] = "");
+  DATA.push(o);
+  renderTable();
+}
+function delRow(i) {
+  DATA.splice(i, 1);
+  renderTable();
+}
+function addColumn() {
+  const name = prompt("新列名：");
+  if (!name) return;
+  name = name.trim();
+  if (!name || COLS.includes(name)) return;
+  COLS.push(name);
+  DATA.forEach(r => { if (!(name in r)) r[name] = ""; });
+  renderTable();
+}
+function delCol(i) {
+  const col = COLS[i];
+  if (!confirm(`删除列「${col}」？该列数据会丢失。`)) return;
+  COLS.splice(i, 1);
+  DATA.forEach(r => { delete r[col]; });
+  renderTable();
+}
+
+/* ---------- 导出 ---------- */
+function csvCell(v) {
+  v = String(v ?? "");
+  if (/[",\n\r]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
+  return v;
+}
+function exportCSV() {
+  if (!DATA.length) { showStatus("没有数据可导出", "err"); return; }
+  const cols = COLS.length ? COLS : computeCols(DATA);
+  const lines = [cols.map(csvCell).join(",")];
+  DATA.forEach(r => lines.push(cols.map(c => csvCell(r[c] || "")).join(",")));
+  const csv = "\uFEFF" + lines.join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "报名信息_" + new Date().toISOString().slice(0,10) + ".csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showStatus("CSV 已下载（" + DATA.length + " 行）", "ok");
+}
+async function copyTSV() {
+  if (!DATA.length) { showStatus("没有数据可复制", "err"); return; }
+  const cols = COLS.length ? COLS : computeCols(DATA);
+  const lines = [cols.join("\t")];
+  DATA.forEach(r => lines.push(cols.map(c => String(r[c] || "").replace(/\t/g," ").replace(/\r?\n/g," ")).join("\t")));
+  const tsv = lines.join("\r\n");
+  try {
+    await navigator.clipboard.writeText(tsv);
+    showStatus("已复制 " + DATA.length + " 行到剪贴板，粘到 Excel/WPS 自动分列。", "ok");
+  } catch(e) {
+    const ta = document.createElement("textarea");
+    ta.value = tsv; document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); document.body.removeChild(ta);
+    showStatus("已复制 " + DATA.length + " 行到剪贴板。", "ok");
+  }
+}
+
+loadConfig();
+</script>
+</body>
+</html>
