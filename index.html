@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>银河漫游指南 // DON'T PANIC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cyan:#00f0ff;
+  --cyan-dim:rgba(0,240,255,.55);
+  --cyan-faint:rgba(0,240,255,.16);
+  --amber:#ffb000;
+  --amber-dim:rgba(255,176,0,.55);
+  --amber-faint:rgba(255,176,0,.18);
+  --bg:#020409;
+  --panel:rgba(2,12,18,.62);
+  --mono:'Share Tech Mono','ZCOOL QingKe HuangYou','Courier New',monospace;
+  --disp:'Orbitron','Share Tech Mono',sans-serif;
+  --zh:'ZCOOL QingKe HuangYou','Microsoft YaHei',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--mono);color:var(--cyan);user-select:none}
+body{animation:flick 7s infinite}
+@keyframes flick{0%,94%,100%{opacity:1}95%{opacity:.88}96%{opacity:1}98%{opacity:.92}99%{opacity:1}}
+#scene{position:fixed;inset:0;display:block}
+
+/* ---------- 面板通用 ---------- */
+.panel{position:fixed;background:var(--panel);border:1px solid var(--cyan-faint);padding:12px 14px;backdrop-filter:blur(3px);box-shadow:0 0 24px rgba(0,240,255,.05),inset 0 0 30px rgba(0,240,255,.03);pointer-events:none;z-index:15}
+.panel::before,.panel::after{content:'';position:absolute;width:9px;height:9px}
+.panel::before{top:-1px;left:-1px;border-top:1px solid var(--cyan);border-left:1px solid var(--cyan)}
+.panel::after{bottom:-1px;right:-1px;border-bottom:1px solid var(--cyan);border-right:1px solid var(--cyan)}
+.panel h3{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--cyan);border-bottom:1px solid var(--cyan-faint);padding-bottom:6px;margin-bottom:9px;font-weight:400}
+.row{display:flex;justify-content:space-between;gap:12px;font-size:12px;line-height:1.95}
+.row label{color:var(--cyan-dim);letter-spacing:1px;white-space:nowrap}
+.row b{color:var(--cyan);font-weight:400;text-shadow:0 0 6px rgba(0,240,255,.4);white-space:nowrap}
+.row b.warn{color:var(--amber);text-shadow:0 0 6px var(--amber-dim)}
+
+/* ---------- 顶栏 ---------- */
+#topbar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-between;align-items:flex-start;padding:12px 20px;pointer-events:none;background:linear-gradient(180deg,rgba(2,6,10,.88),transparent)}
+.brand h1{font-family:var(--zh);font-size:26px;color:var(--cyan);letter-spacing:8px;text-shadow:0 0 16px rgba(0,240,255,.55);font-weight:400}
+.brand p{font-size:9px;letter-spacing:3px;color:var(--cyan-dim);margin-top:3px}
+#clocks{display:flex;gap:28px}
+.clock{text-align:center}
+.clock label{display:block;font-size:9px;letter-spacing:2px;color:var(--cyan-dim);margin-bottom:4px}
+.clock span{font-size:16px;color:var(--cyan);text-shadow:0 0 8px rgba(0,240,255,.45);letter-spacing:1px}
+#status-right{font-size:10px;color:var(--cyan-dim);text-align:right;line-height:1.9;letter-spacing:1px}
+#status-right span{color:var(--cyan)}
+
+/* ---------- 解码器 ---------- */
+#decoder{top:92px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;max-width:min(680px,92vw);padding:8px 16px}
+.dec-label{font-size:10px;color:var(--amber);letter-spacing:2px;white-space:nowrap}
+#decoder-text{font-size:13px;color:var(--cyan);letter-spacing:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 8px rgba(0,240,255,.5)}
+.cursor{color:var(--cyan);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- 左：飞船定位 ---------- */
+#nav-panel{left:18px;top:128px;width:272px}
+
+/* ---------- 右：最近星球 ---------- */
+#planet-panel{right:18px;top:128px;width:296px}
+#planet-name{font-family:var(--zh);font-size:20px;color:var(--cyan);letter-spacing:2px;text-shadow:0 0 12px rgba(0,240,255,.5);margin:2px 0 5px;font-weight:400}
+#planet-type{display:inline-block;font-size:10px;border:1px solid var(--amber-dim);color:var(--amber);padding:2px 9px;letter-spacing:3px;margin-bottom:8px}
+#planet-desc{font-size:11px;line-height:1.75;color:var(--cyan-dim);margin-top:9px;min-height:38px}
+.planet-src{font-size:9px;color:rgba(0,240,255,.35);margin-top:9px;letter-spacing:1px}
+
+/* ---------- 中央驾驶舱 ---------- */
+#center-hud{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;pointer-events:none;z-index:10}
+#reticle-wrap{position:relative;width:232px;height:232px}
+.ring{position:absolute;inset:0;animation:spin 70s linear infinite}
+.ring2{animation:spin 100s linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ringtext{fill:var(--cyan-dim);font-size:13px;letter-spacing:7px;font-family:var(--mono)}
+.ret-dot{position:absolute;left:50%;top:50%;width:5px;height:5px;background:var(--cyan);transform:translate(-50%,-50%);box-shadow:0 0 9px var(--cyan)}
+.ret-b{position:absolute;width:15px;height:15px;border:1px solid var(--cyan-dim)}
+.ret-b.tl{left:52px;top:52px;border-right:none;border-bottom:none}
+.ret-b.tr{right:52px;top:52px;border-left:none;border-bottom:none}
+.ret-b.bl{left:52px;bottom:52px;border-right:none;border-top:none}
+.ret-b.br{right:52px;bottom:52px;border-left:none;border-top:none}
+#flight-data{display:flex;gap:24px;font-size:12px;color:var(--cyan-dim);letter-spacing:1px;background:rgba(2,10,16,.55);padding:7px 18px;border:1px solid var(--cyan-faint)}
+#flight-data b{color:var(--cyan);font-weight:400;margin-left:5px;text-shadow:0 0 6px rgba(0,240,255,.4)}
+#encounter-btn{pointer-events:auto;cursor:pointer;font-family:var(--zh);font-size:22px;letter-spacing:9px;color:var(--amber);background:rgba(30,18,0,.55);border:1px solid var(--amber);padding:10px 26px 9px 35px;box-shadow:0 0 22px rgba(255,176,0,.18),inset 0 0 16px rgba(255,176,0,.08);text-shadow:0 0 10px rgba(255,176,0,.6);animation:btn-pulse 2.6s ease-in-out infinite;transition:background .2s,transform .1s}
+#encounter-btn small{display:block;font-family:var(--mono);font-size:8px;letter-spacing:7px;color:var(--amber-dim);margin-top:3px}
+#encounter-btn:hover{background:rgba(255,176,0,.16)}
+#encounter-btn:active{transform:scale(.96)}
+@keyframes btn-pulse{0%,100%{box-shadow:0 0 22px rgba(255,176,0,.15),inset 0 0 16px rgba(255,176,0,.08)}50%{box-shadow:0 0 36px rgba(255,176,0,.38),inset 0 0 24px rgba(255,176,0,.16)}}
+
+/* ---------- 底部通讯 ---------- */
+#comm{left:18px;bottom:18px;width:460px}
+#comm-feed{display:flex;flex-direction:column;gap:5px;min-height:98px;max-height:98px;overflow:hidden;justify-content:flex-end}
+.comm-msg{font-size:11px;line-height:1.55;color:var(--cyan-dim);animation:comm-in .4s ease both}
+.comm-msg b{color:var(--cyan);font-weight:400;margin-right:6px}
+.comm-msg.special b{color:var(--amber)}
+.comm-msg.special{color:var(--amber-dim)}
+@keyframes comm-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ---------- 操作提示 / 触控 ---------- */
+#controls-hint{right:18px;bottom:18px;font-size:10px;color:var(--cyan-dim);line-height:2;letter-spacing:1px;padding:9px 14px}
+#touchpad{display:none;position:fixed;right:18px;bottom:18px;z-index:30;grid-template-columns:repeat(3,58px);gap:6px}
+#touchpad button{pointer-events:auto;font-family:var(--zh);font-size:13px;letter-spacing:2px;color:var(--cyan);background:rgba(2,12,18,.7);border:1px solid var(--cyan-dim);padding:11px 0;touch-action:none}
+#touchpad button:active{background:rgba(0,240,255,.22)}
+@media(pointer:coarse){#touchpad{display:grid}#controls-hint{display:none}}
+
+/* ---------- 提示 / 干扰 ---------- */
+#toasts{position:fixed;top:96px;left:50%;transform:translateX(-50%);z-index:70;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+.toast{font-size:12px;letter-spacing:2px;color:var(--amber);background:rgba(24,14,0,.75);border:1px solid var(--amber-dim);padding:7px 20px;animation:toast-in .3s ease both,toast-out .5s ease 3.6s both;white-space:nowrap}
+@keyframes toast-in{from{opacity:0;transform:translateY(-8px)}}
+@keyframes toast-out{to{opacity:0}}
+#burst{position:fixed;inset:0;z-index:85;pointer-events:none;opacity:0;background:repeating-linear-gradient(0deg,rgba(255,60,120,.09) 0 2px,rgba(0,255,255,.08) 2px 4px,transparent 4px 8px);mix-blend-mode:screen}
+#burst.on{animation:burst-anim .5s steps(4) both}
+@keyframes burst-anim{0%{opacity:0}20%{opacity:1;transform:translateX(-8px)}40%{opacity:.7;transform:translateX(6px)}60%{opacity:1;transform:translateX(-4px)}80%{opacity:.5;transform:translateX(3px)}100%{opacity:0;transform:none}}
+body.weird #app{animation:weird 3.2s ease both}
+@keyframes weird{0%{filter:none}25%{filter:hue-rotate(120deg) saturate(2)}60%{filter:hue-rotate(260deg) saturate(1.6) contrast(1.2)}100%{filter:none}}
+body.pain{animation:pain-bg 1.1s ease-in-out infinite}
+@keyframes pain-bg{0%,100%{box-shadow:inset 0 0 0 rgba(255,40,40,0)}50%{box-shadow:inset 0 0 170px rgba(255,40,40,.3)}}
+
+/* ---------- 事件弹窗 ---------- */
+#modal{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(1,4,8,.78);backdrop-filter:blur(4px)}
+#modal.open{display:flex}
+#modal-box{position:relative;display:flex;max-width:740px;width:calc(100vw - 40px);border-color:var(--amber-faint);padding:0;animation:modal-in .45s steps(6) both;pointer-events:auto}
+#modal-box::before{border-color:var(--amber)}
+#modal-box::after{border-color:var(--amber)}
+@keyframes modal-in{0%{opacity:0;transform:translate(-14px,8px) skewX(-4deg)}100%{opacity:1;transform:none}}
+.m-img{flex:0 0 250px;position:relative;border-right:1px solid var(--amber-faint);min-height:300px}
+.m-img img{width:250px;height:100%;min-height:300px;object-fit:cover;display:block;filter:contrast(1.06) saturate(1.12)}
+.m-img img.error{display:none}
+#modal-fallback{display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:34px;color:var(--amber);letter-spacing:5px}
+#a42{display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:84px;color:var(--amber);text-shadow:0 0 34px var(--amber);font-family:var(--disp);letter-spacing:10px;font-weight:700}
+.m-body{flex:1;padding:18px 20px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+#modal-tag{font-size:10px;color:var(--amber-dim);letter-spacing:3px}
+#modal-title{font-family:var(--zh);font-size:24px;color:var(--amber);letter-spacing:4px;text-shadow:0 0 14px rgba(255,176,0,.55);font-weight:400}
+#modal-desc{font-size:12px;line-height:1.85;color:rgba(0,240,255,.75)}
+#modal-effect{font-size:11px;color:var(--amber);border-top:1px dashed var(--amber-faint);padding-top:10px;line-height:1.6}
+#modal-close{align-self:flex-end;margin-top:auto;cursor:pointer;background:transparent;border:1px solid var(--amber);color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:3px;padding:7px 18px;transition:background .2s}
+#modal-close:hover{background:rgba(255,176,0,.16)}
+
+/* ---------- 启动画面 ---------- */
+#boot{position:fixed;inset:0;z-index:95;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .8s;pointer-events:none}
+#boot.done{opacity:0}
+#boot pre{font-family:var(--mono);font-size:13px;line-height:2.1;color:var(--cyan);text-shadow:0 0 8px rgba(0,240,255,.4);letter-spacing:1px}
+
+/* ---------- CRT ---------- */
+.scanlines{position:fixed;inset:0;z-index:90;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px)}
+.scanlines::after{content:'';position:absolute;left:0;right:0;height:130px;top:-140px;background:linear-gradient(180deg,transparent,rgba(0,240,255,.035),transparent);animation:crt-roll 9s linear infinite}
+@keyframes crt-roll{to{top:100%}}
+.vignette{position:fixed;inset:0;z-index:91;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
+
+/* ---------- 响应式 ---------- */
+@media(max-width:1100px){
+  #nav-panel{width:230px}
+  #planet-panel{width:250px}
+  #comm{width:380px}
+}
+@media(max-width:860px){
+  .brand h1{font-size:17px;letter-spacing:4px}
+  .brand p{display:none}
+  #clocks{gap:12px}
+  .clock span{font-size:12px}
+  #status-right{display:none}
+  #nav-panel{width:190px;top:150px;padding:9px 10px}
+  .row{font-size:10px;line-height:1.8}
+  #planet-panel{width:200px;top:150px;padding:9px 10px}
+  #planet-name{font-size:15px}
+  #planet-desc{font-size:10px}
+  #comm{width:calc(100vw - 36px);bottom:12px}
+  #decoder{top:78px;padding:6px 10px}
+  #decoder-text{font-size:11px}
+  #reticle-wrap{transform:scale(.72)}
+  #flight-data{gap:12px;font-size:10px}
+  #encounter-btn{font-size:17px;padding:7px 16px 6px 25px}
+  #modal-box{flex-direction:column;max-height:86vh;overflow:auto}
+  .m-img{flex:none;min-height:160px;border-right:none;border-bottom:1px solid var(--amber-faint)}
+  .m-img img{width:100%;height:160px;min-height:160px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene"></canvas>
+
+  <header id="topbar">
+    <div class="brand">
+      <h1>银河漫游指南</h1>
+      <p>THE HITCHHIKER'S GUIDE TO THE GALAXY // DON'T PANIC</p>
+    </div>
+    <div id="clocks">
+      <div class="clock"><label>地球时间 EARTH</label><span id="earth-clock">--:--:--</span></div>
+      <div class="clock"><label>飞船时间 SHIP</label><span id="ship-clock">--:--:--</span></div>
+      <div class="clock"><label>时差 Δ</label><span id="time-delta">+00:00:00</span></div>
+      <div class="clock"><label>星历 STARDATE</label><span id="stardate">42000.00</span></div>
+    </div>
+    <div id="status-right">
+      <div>信号 <span id="signal-bars">▮▮▮▯▯</span></div>
+      <div>频道 <span>42.42 MHz</span></div>
+      <div>威胁等级：<span>低（目前为止）</span></div>
+    </div>
+  </header>
+
+  <div id="decoder" class="panel">
+    <span class="dec-label">▞ 亚以太解码 ▚</span>
+    <span><span id="decoder-text"></span><span class="cursor">▍</span></span>
+  </div>
+
+  <aside id="nav-panel" class="panel">
+    <h3>▚ 飞船定位 VESSEL</h3>
+    <div class="row"><label>船名</label><b>小猎犬 II 号</b></div>
+    <div class="row"><label>坐标 X</label><b id="nav-x">+0.00 kpc</b></div>
+    <div class="row"><label>坐标 Y</label><b id="nav-y">+0.00 kpc</b></div>
+    <div class="row"><label>坐标 Z</label><b id="nav-z">+0.00 kpc</b></div>
+    <div class="row"><label>所在旋臂</label><b id="nav-arm">—</b></div>
+    <div class="row"><label>扇区</label><b id="nav-sector">—</b></div>
+    <div class="row"><label>距银心</label><b id="nav-center">—</b></div>
+    <div class="row"><label>毛巾</label><b id="nav-towel">未携带 ▲</b></div>
+  </aside>
+
+  <aside id="planet-panel" class="panel">
+    <h3>▚ 最近星球 NEAREST BODY</h3>
+    <div id="planet-name">正在扫描……</div>
+    <div id="planet-type">未知</div>
+    <div class="row"><label>距离</label><b id="planet-dist">—</b></div>
+    <div class="row"><label>方位</label><b id="planet-bear">—</b></div>
+    <p id="planet-desc">望远镜正在热身。</p>
+    <p class="planet-src">▸ 数据来源：银河漫游指南（第 42 版 · 更新于 42 年前）</p>
+  </aside>
+
+  <div id="center-hud">
+    <div id="reticle-wrap">
+      <svg class="ring" viewBox="0 0 232 232">
+        <defs><path id="rp1" d="M116,116 m-105,0 a105,105 0 1,1 210,0 a105,105 0 1,1 -210,0"/></defs>
+        <circle cx="116" cy="116" r="105" fill="none" stroke="rgba(0,240,255,.14)" stroke-width="1" stroke-dasharray="2 7"/>
+        <text class="ringtext"><textPath href="#rp1" id="ring-text-1"></textPath></text>
+      </svg>
+      <svg class="ring ring2" viewBox="0 0 232 232">
+        <defs><path id="rp2" d="M116,116 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs>
+        <circle cx="116" cy="116" r="78" fill="none" stroke="rgba(0,240,255,.1)" stroke-width="1" stroke-dasharray="1 5"/>
+        <text class="ringtext" style="font-size:11px"><textPath href="#rp2" id="ring-text-2"></textPath></text>
+      </svg>
+      <div class="ret-dot"></div>
+      <div class="ret-b tl"></div><div class="ret-b tr"></div><div class="ret-b bl"></div><div class="ret-b br"></div>
+    </div>
+    <div id="flight-data">
+      <span>速度<b id="hud-speed">0.00c</b></span>
+      <span>姿态<b id="hud-heading">000°</b></span>
+      <span>膨胀<b id="hud-gamma">γ 1.000</b></span>
+    </div>
+    <button id="encounter-btn">遇到了？<small>ENCOUNTER ?</small></button>
+  </div>
+
+  <footer id="comm" class="panel">
+    <h3>▚ 深空通讯 SUB-ETHA ▸ 1420.42 MHz</h3>
+    <div id="comm-feed"></div>
+  </footer>
+
+  <div id="controls-hint" class="panel">
+    W/S 推进减速 · A/D 转向<br>Q/E 侧移 · R/F 升降<br>拖拽环视 · 滚轮缩放
+  </div>
+
+  <div id="touchpad">
+    <button data-key="a">左转</button>
+    <button data-key="w">推进</button>
+    <button data-key="d">右转</button>
+    <button data-key="q">左移</button>
+    <button data-key="s">减速</button>
+    <button data-key="e">右移</button>
+  </div>
+
+  <div id="toasts"></div>
+  <div id="burst"></div>
+
+  <div id="modal">
+    <div id="modal-box" class="panel">
+      <div class="m-img">
+        <img id="modal-img" alt="遭遇插画">
+        <div id="modal-fallback">▚▞▚▞</div>
+        <div id="a42">42</div>
+      </div>
+      <div class="m-body">
+        <p id="modal-tag"></p>
+        <h2 id="modal-title"></h2>
+        <div id="modal-desc"></div>
+        <p id="modal-effect"></p>
+        <button id="modal-close">继续漫游 ▸</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="boot"><pre id="boot-text"></pre></div>
+</div>
+
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+/* ================= 工具 ================= */
+const $=id=>document.getElementById(id);
+const rand=(a,b)=>a+Math.random()*(b-a);
+const pick=arr=>arr[Math.floor(Math.random()*arr.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const p2=n=>String(n).padStart(2,'0');
+
+if(typeof THREE==='undefined'){
+  $('boot-text').textContent='> 错误：无法加载 Three.js（需要联网）\n> 请检查网络后刷新';
+  return;
+}
+
+/* ================= 数据 ================= */
+const GLYPHS=['▚','▞','▛','▜','▌','▐','⌁','⌇','⏃','⏆','⏚','⏦','⍜','⍟','⎔','⎖','⌬','⍾','⏀','⍙','⏁','⏂','⌰','⌱','⍢','⍤','ꓫ','ꓥ','ꓯ','ᘔ','ᒣ','ᑫ'];
+const PHRASES=['别慌，带好毛巾','生命、宇宙以及一切：42','现在刹车已经来不及了','你刚刚错过了一个出口','下一站：不存在','巴别鱼正在听你说话','这艘船上有老鼠，别问','非概率水平：2^276709:1','沃贡朗诵会：谢绝入场','你并不孤单（这不是安慰）','左边的星星在看你','请勿对银心做鬼脸'];
+const ARM_NAMES=['英仙臂','猎户臂','人马臂','盾牌-半人马臂','船底臂'];
+
+const PLANETS=[
+  {name:'织女 - 阿尔法',type:'海洋世界',color:0x6fd6ff,r:14,a:0.6,y:0.3,desc:'97% 的表面被海洋覆盖，剩下的 3% 是湿的。导游手册建议自带船。'},
+  {name:'巴别鱼四号',type:'翻译卫星',color:0xffd86f,r:18,a:2.2,y:-0.2,desc:'整颗星球是一只巨大的耳朵，专门收听其他星球的八卦，并实时翻译成抱怨。'},
+  {name:'沃贡 Prime',type:'官僚行星',color:0x9fff9f,r:9,a:3.9,y:0.1,desc:'在这里捡起一块石头需要填写三份表格，其中一份用来申请另外两份。'},
+  {name:'小酒馆 B-612',type:'轨道餐厅',color:0xff9f6f,r:21,a:5.1,y:0.4,desc:'绕行一周需要两个宇宙周期。账单会追着你到下一个星系。'},
+  {name:'42 号盲区',type:'数据中心',color:0xb08cff,r:6,a:1.6,y:0.2,desc:'整颗星球是一台超级计算机，算了 750 万年，据说马上就要出结果了。'},
+  {name:'特拉尔',type:'野兽星球',color:0xff6f9f,r:24,a:4.3,y:-0.3,desc:'栖息着嗜血傻兽。生存建议：闭上眼睛假装它不存在——它也这么想你。'},
+  {name:'叹息星',type:'沼气巨星',color:0x8fa8ff,r:12,a:5.5,y:0,desc:'大气层 100% 由叹息构成。降落后你会莫名想起前任。'},
+  {name:'火柴星',type:'沙漠行星',color:0xffb35c,r:16,a:3.0,y:0.2,desc:'一年只下一次雨，而且是热的。当地居民以吐槽为唯一水源。'},
+  {name:'橡皮泥企鹅站',type:'冰封世界',color:0x7fffe0,r:20,a:0.9,y:-0.4,desc:'居民全部是企鹅形状的黄色橡皮泥。它们坚称这是非概率引擎的错。'},
+  {name:'自助引力九号',type:'小行星带',color:0xd0d0d0,r:11,a:4.7,y:0.3,desc:'DIY 星球：引力需要自行组装，说明书在另一颗小行星上。'}
+];
+
+const COMM=[
+  {s:'沃贡施工舰队',t:'前方旋臂拆除重建，绕行通告已寄出，签收回执要求三份。'},
+  {s:'黄金之心号',t:'刚用了非概率引擎，现在我的茶是热的而宇宙不是。'},
+  {s:'Bistromathic 号',t:'有人看见我的船吗？它算错了自己的账单，正在羞愧地绕圈。'},
+  {s:'未知来源',t:'42'},
+  {s:'毛巾协会',t:'提醒：任何体面的星际旅行者都应携带毛巾。'},
+  {s:'抑郁机器人 MARVIN',t:'别问我怎么样。你不会想知道的。真的。'},
+  {s:'双头星人 ZAPHOD',t:'嘿，我这两个头里总有一个觉得你很赞！'},
+  {s:'深思号',t:'距离公布最终答案还有……哦，已经公布了。是 42。'},
+  {s:'鲸鱼（坠落中）',t:'你好，地面——咦，这是什么？风？——'},
+  {s:'牵牛花（下落中）',t:'哦不，又来了。'},
+  {s:'含漱爆破液电台',t:'今晚节目：如何连喝九杯还能算清小费。'},
+  {s:'星际堵车广播',t:'第二旋臂出现堵车，预计延误：一个冰河世纪。'},
+  {s:'小绿人协会',t:'我们不是传说。请勿拍照。'},
+  {s:'搭便车者互助会',t:'今日搭车成功率：42%。'},
+  {s:'时空管理局',t:'您上个月的超速罚单已寄往上周。'},
+  {s:'地球（已删除）',t:'……信号中断……'},
+  {s:'非概率电台',t:'您刚才那个念头有 1/2^276709 的概率是真的。'},
+  {s:'飞船自检',t:'毛巾：未检测到。恐慌等级 +1。'},
+  {s:'银心 Sgr A*',t:'嗝。'},
+  {s:'巴别鱼频道',t:'今天学到的新词："再绕一圈"——所有语言里都令人绝望。'}
+];
+
+const EVENTS=[
+  {id:'whale',img:'assets/encounter-whale.jpg',title:'鲸鱼与牵牛花',tag:'非概率残渣',
+   desc:'一头鲸鱼和一盆牵牛花凭空出现在你的航线上。鲸鱼在坠落中开始思考风、地面与存在的意义；牵牛花只想说一句："哦不，又来了。"',
+   effect:'鲸鱼擦着护盾掠过，发出一声礼貌的"噗"。',
+   run(){shake(.7);nudge();}},
+  {id:'vogon',img:'assets/encounter-vogon.jpg',title:'沃贡诗歌朗诵会',tag:'听觉危害 III 级',
+   desc:'沃贡诗人开始朗读《规划署灰泥颂》。这是已知宇宙中第三糟糕的体验——第一和第二名都发生在同一场朗诵会的彩排。',
+   effect:'全船系统集体假装死机以示抗议。',
+   run(){shake(1.5);painMode(8);}},
+  {id:'improb',img:'assets/encounter-improbability.jpg',title:'非概率引擎失控',tag:'概率云 2^276709:1',
+   desc:'概率云剧烈波动。你的茶变成了企鹅，椅子变成了黄色橡皮泥，而你正在认真考虑要不要给飞船也配一条毛巾。',
+   effect:'飞船被随机投掷到星系的某个角落。',
+   run(){teleport();weirdFlash();}},
+  {id:'construct',img:'assets/encounter-construction.jpg',title:'星际绕行施工',tag:'公告已寄出',
+   desc:'前方旋臂正在拆除重建——为了修一条更好的旋臂。绕行通告其实早就贴出来了，用的是一种还没进化出来的语言。',
+   effect:'航向被强制调整为"绕一下"。',
+   run(){detour();}},
+  {id:'towel',img:'assets/encounter-towel.jpg',title:'毛巾例行检查',tag:'搭便车者协会',
+   desc:'检查结果：您没有携带毛巾。在银河系中，展示毛巾的搭车者会被自动认为同样拥有牙刷、洗衣袋、地球地图等一切东西。',
+   effect:'恐慌指数 +2，体面指数 -42。',
+   run(){towelCheck();}},
+  {id:'robot',img:'assets/encounter-robot.jpg',title:'抑郁机器人',tag:'GPP 芯片过载',
+   desc:'一台大脑像行星一样大的机器人飘过，向你详细预告了它未来 370 万年的头痛计划。你的飞船时钟变慢了——不是相对论，是情绪传染。',
+   effect:'全局时间膨胀 ×3，持续 15 秒。',
+   run(){slowmo(15);}},
+  {id:'answer',img:null,title:'终极答案',tag:'深思 · 输出端口',
+   desc:'超级计算机"深思"运转 750 万年后，即将给出关于生命、宇宙以及一切的终极答案。它清了清并不存在的嗓子——',
+   effect:'星历 +42.42。问题仍未知。',
+   run(){stardateOffset+=101;}}
+];
+
+/* ================= 场景 ================= */
+const canvas=$('scene');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.1,900);
+
+function glowTexture(c1,c2){
+  const c=document.createElement('canvas');c.width=c.height=128;
+  const ctx=c.getContext('2d');
+  const g=ctx.createRadialGradient(64,64,0,64,64,64);
+  g.addColorStop(0,c1);g.addColorStop(.4,c2);g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,128,128);
+  return new THREE.CanvasTexture(c);
+}
+function hexGlow(hex,a){
+  const r=hex>>16&255,g=hex>>8&255,b=hex&255;
+  return glowTexture('rgba('+r+','+g+','+b+','+a+')','rgba('+r+','+g+','+b+',0)');
+}
+
+/* ---- 螺旋星系 ---- */
+const galaxy=new THREE.Group();scene.add(galaxy);
+(function(){
+  const count=22000,radius=26,branches=5,spin=1.15,randomness=.42,rp=2.8;
+  const pos=new Float32Array(count*3),col=new Float32Array(count*3);
+  const scl=new Float32Array(count),twk=new Float32Array(count);
+  const inside=new THREE.Color('#ffb35c'),outside=new THREE.Color('#37d5ff'),white=new THREE.Color('#ffffff'),tmp=new THREE.Color();
+  for(let i=0;i<count;i++){
+    const r=Math.pow(Math.random(),2.1)*radius+.3;
+    const ba=(i%branches)/branches*Math.PI*2,sa=r*spin;
+    const rx=Math.pow(Math.random(),rp)*(Math.random()<.5?1:-1)*randomness*r;
+    const ry=Math.pow(Math.random(),rp)*(Math.random()<.5?1:-1)*randomness*r*.3;
+    const rz=Math.pow(Math.random(),rp)*(Math.random()<.5?1:-1)*randomness*r;
+    pos[i*3]=Math.cos(ba+sa)*r+rx;pos[i*3+1]=ry;pos[i*3+2]=Math.sin(ba+sa)*r+rz;
+    tmp.copy(inside).lerp(outside,r/radius).lerp(white,Math.random()*.22);
+    col[i*3]=tmp.r;col[i*3+1]=tmp.g;col[i*3+2]=tmp.b;
+    scl[i]=Math.random()*1.6+.3;twk[i]=Math.random()*2+.5;
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('aColor',new THREE.BufferAttribute(col,3));
+  geo.setAttribute('aScale',new THREE.BufferAttribute(scl,1));
+  geo.setAttribute('aTwinkle',new THREE.BufferAttribute(twk,1));
+  const mat=new THREE.ShaderMaterial({
+    uniforms:{uTime:{value:0},uSize:{value:30*renderer.getPixelRatio()}},
+    vertexShader:'uniform float uTime;uniform float uSize;attribute float aScale;attribute vec3 aColor;attribute float aTwinkle;varying vec3 vColor;void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);gl_Position=projectionMatrix*mv;float tw=0.75+0.35*sin(uTime*aTwinkle*2.0+position.x*3.7);gl_PointSize=min(uSize*aScale*tw*(1.0/-mv.z),140.0);vColor=aColor;}',
+    fragmentShader:'varying vec3 vColor;void main(){float d=distance(gl_PointCoord,vec2(0.5));float a=0.06/d-0.12;if(a<0.0)discard;gl_FragColor=vec4(vColor,a);}',
+    transparent:true,depthWrite:false,blending:THREE.AdditiveBlending
+  });
+  galaxy.add(new THREE.Points(geo,mat));
+  galaxy.userData.starMat=mat;
+})();
+const coreGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture('rgba(255,200,130,.95)','rgba(255,140,50,0)'),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
+coreGlow.scale.set(10,10,1);galaxy.add(coreGlow);
+const coreHalo=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture('rgba(0,220,255,.5)','rgba(0,180,255,0)'),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.55}));
+coreHalo.scale.set(20,20,1);galaxy.add(coreHalo);
+
+/* ---- 远景星 ---- */
+(function(){
+  const n=2600,pos=new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    const r=rand(160,520),t=rand(0,Math.PI*2),ph=Math.acos(rand(-1,1));
+    pos[i*3]=r*Math.sin(ph)*Math.cos(t);pos[i*3+1]=r*Math.cos(ph)*.6;pos[i*3+2]=r*Math.sin(ph)*Math.sin(t);
+  }
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(g,new THREE.PointsMaterial({size:1.1,color:0x9fbcd8,transparent:true,opacity:.65})));
+})();
+
+/* ---- 星球 ---- */
+const planetObjs=PLANETS.map(p=>{
+  const grp=new THREE.Group();
+  grp.add(new THREE.Mesh(new THREE.SphereGeometry(.42,16,16),new THREE.MeshBasicMaterial({color:p.color})));
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:hexGlow(p.color,.85),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
+  glow.scale.set(2.4,2.4,1);grp.add(glow);
+  grp.position.set(Math.cos(p.a)*p.r,p.y,Math.sin(p.a)*p.r);
+  galaxy.add(grp);
+  return {data:p,group:grp,glow};
+});
+const marker=new THREE.Mesh(new THREE.RingGeometry(.95,1.08,48),new THREE.MeshBasicMaterial({color:0xffb000,transparent:true,opacity:.95,side:THREE.DoubleSide,depthWrite:false}));
+marker.visible=false;scene.add(marker);
+
+/* ---- 飞船 ---- */
+const shipGroup=new THREE.Group();
+const coneGeo=new THREE.ConeGeometry(.16,.62,6);coneGeo.rotateX(Math.PI/2);
+shipGroup.add(new THREE.Mesh(coneGeo,new THREE.MeshBasicMaterial({color:0x062530})));
+shipGroup.add(new THREE.Mesh(coneGeo,new THREE.MeshBasicMaterial({color:0x00f0ff,wireframe:true,transparent:true,opacity:.85})));
+const engineGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture('rgba(0,240,255,.95)','rgba(0,240,255,0)'),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
+engineGlow.position.set(0,0,-.42);engineGlow.scale.set(1.2,1.2,1);shipGroup.add(engineGlow);
+scene.add(shipGroup);
+
+/* ================= 状态 ================= */
+const MAXV=24;                 // 最大速度（映射为 0.9c）
+const KPC=0.5;                 // 1 单位 = 0.5 千秒差距
+const ship={pos:new THREE.Vector3(16*Math.cos(.8),.8,16*Math.sin(.8)),vel:new THREE.Vector3(),yaw:0};
+ship.yaw=Math.atan2(-ship.pos.x,-ship.pos.z);
+const keys={};
+const earthStart=Date.now();
+let earthElapsed=0,shipElapsed=0,stardateOffset=0;
+let timeScale=1,extraGamma=1,galaxyAngle=0;
+let shakeAmt=0,camTheta=0,camPhi=.34,camDist=7.5;
+let towelChecked=false;
+const clock=new THREE.Clock();
+
+/* ================= 输入 ================= */
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+function key(k){
+  if(k==='w')return keys.w||keys.arrowup;
+  if(k==='s')return keys.s||keys.arrowdown;
+  if(k==='a')return keys.a||keys.arrowleft;
+  if(k==='d')return keys.d||keys.arrowright;
+  return !!keys[k];
+}
+let dragging=false,lastX=0,lastY=0;
+addEventListener('pointerdown',e=>{
+  if(e.target.closest('#encounter-btn,#modal,#touchpad button'))return;
+  dragging=true;lastX=e.clientX;lastY=e.clientY;
+});
+addEventListener('pointermove',e=>{
+  if(!dragging)return;
+  camTheta-=(e.clientX-lastX)*.005;
+  camPhi=clamp(camPhi+(e.clientY-lastY)*.004,.08,1.25);
+  lastX=e.clientX;lastY=e.clientY;
+});
+addEventListener('pointerup',()=>dragging=false);
+addEventListener('pointercancel',()=>dragging=false);
+addEventListener('wheel',e=>{camDist=clamp(camDist+e.deltaY*.01,3.5,22);},{passive:true});
+document.querySelectorAll('#touchpad button').forEach(b=>{
+  const k=b.dataset.key;
+  const on=e=>{e.preventDefault();keys[k]=true;};
+  const off=()=>{keys[k]=false;};
+  b.addEventListener('pointerdown',on);
+  b.addEventListener('pointerup',off);
+  b.addEventListener('pointerleave',off);
+  b.addEventListener('pointercancel',off);
+});
+addEventListener('resize',()=>{
+  renderer.setSize(innerWidth,innerHeight);
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+/* ================= 通讯 ================= */
+const feed=$('comm-feed');
+function pushComm(sender,text,special){
+  const el=document.createElement('div');
+  el.className='comm-msg'+(special?' special':'');
+  const b=document.createElement('b');b.textContent='['+sender+']';
+  el.appendChild(b);el.appendChild(document.createTextNode(text));
+  feed.appendChild(el);
+  while(feed.children.length>5)feed.removeChild(feed.firstChild);
+}
+(function randomComm(){
+  const m=pick(COMM);pushComm(m.s,m.t);
+  setTimeout(randomComm,rand(7000,15000));
+})();
+
+/* ================= 解码器 ================= */
+let decTarget=pick(PHRASES),decSettled=0,decState='decode',decTimer=0;
+const decText=$('decoder-text');
+function renderDecoder(){
+  let s='';
+  for(let i=0;i<decTarget.length;i++){
+    const ch=decTarget[i];
+    s+=(ch===' ')?' ':(i<decSettled?ch:pick(GLYPHS));
+  }
+  decText.textContent=s;
+}
+setInterval(()=>{
+  if(decState==='decode'){
+    decSettled+=Math.random()<.6?1:0;
+    if(decSettled>=decTarget.length){decState='hold';decTimer=0;}
+    renderDecoder();
+  }else{
+    decTimer+=.07;
+    if(decTimer>2.8){decState='decode';decSettled=0;decTarget=pick(PHRASES);}
+  }
+},70);
+
+/* 准星环形乱码 */
+function fillRing(id,n){
+  let s='';
+  for(let i=0;i<n;i++)s+=pick(GLYPHS)+' ';
+  $(id).textContent=s;
+}
+fillRing('ring-text-1',46);
+fillRing('ring-text-2',36);
+
+/* ================= 提示 / 干扰 ================= */
+const toasts=$('toasts');
+function toast(text){
+  const el=document.createElement('div');el.className='toast';el.textContent=text;
+  toasts.appendChild(el);setTimeout(()=>el.remove(),4300);
+}
+const burstEl=$('burst');
+function burst(){
+  burstEl.classList.remove('on');void burstEl.offsetWidth;burstEl.classList.add('on');
+}
+const signalBars=$('signal-bars');
+setInterval(()=>{if(Math.random()<.3)signalBars.textContent=pick(['▮▮▮▮▯','▮▮▮▯▯','▮▮▮▮▮','▮▮▯▯▯','▮▮▮▯▯']);},4000);
+
+/* ================= 事件效果 ================= */
+function shake(a){shakeAmt=Math.max(shakeAmt,a);}
+function nudge(){ship.vel.x+=rand(-3,3);ship.vel.y+=rand(-1,1);ship.vel.z+=rand(-3,3);}
+function teleport(){
+  const r=rand(4,24),a=rand(0,Math.PI*2);
+  ship.pos.set(Math.cos(a)*r,rand(-1.5,1.5),Math.sin(a)*r);
+  ship.vel.set(rand(-4,4),rand(-1,1),rand(-4,4));
+  shake(1);burst();
+  pushComm('非概率引擎','已重新排列您的坐标。不客气。',true);
+}
+function weirdFlash(){
+  document.body.classList.add('weird');
+  setTimeout(()=>document.body.classList.remove('weird'),3300);
+}
+function detour(){
+  ship.vel.setLength(Math.max(6,ship.vel.length()*.7));
+  ship.yaw+=(Math.random()<.5?1:-1)*rand(.9,1.4);
+  pushComm('星际施工队','抱歉！前方旋臂拆除重建。绕行方案：随便往哪都行。',true);
+}
+function towelCheck(){
+  towelChecked=true;
+  const t=$('nav-towel');t.classList.add('warn');
+  t.textContent=towelChecked?'未携带 ▲ 警告':'未携带 ▲';
+  pushComm('搭便车者互助会',towelChecked?'有人没带毛巾。重复：没、带、毛、巾。':'毛巾检测失败。',true);
+  toast('⚠ 恐慌指数 +2 · 体面指数 -42');
+}
+function slowmo(sec){
+  timeScale=.35;extraGamma=3;
+  toast('时间正在变得粘稠……');
+  setTimeout(()=>{timeScale=1;extraGamma=1;toast('时间恢复了流动（大概）');},sec*1000);
+}
+function painMode(sec){
+  document.body.classList.add('pain');
+  const msgs=['……请让它停下来。','我的听觉皮层申请了罢工。','第三糟糕。真的。'];
+  let i=0;
+  const iv=setInterval(()=>{pushComm('船载系统',msgs[i++%3],true);},2200);
+  setTimeout(()=>{document.body.classList.remove('pain');clearInterval(iv);},sec*1000);
+}
+
+/* ================= 遭遇事件 ================= */
+const modal=$('modal'),modalImg=$('modal-img'),modalFallback=$('modal-fallback'),a42=$('a42');
+let lastEvent=null,eventCount=0;
+EVENTS.forEach(ev=>{if(ev.img){const im=new Image();im.src=ev.img;}});
+$('encounter-btn').addEventListener('click',()=>{
+  let ev;
+  do{ev=pick(EVENTS);}while(ev===lastEvent&&EVENTS.length>1);
+  lastEvent=ev;eventCount++;
+  $('modal-tag').textContent='遭遇事件 #'+String(eventCount).padStart(2,'0')+' · '+ev.tag;
+  $('modal-title').textContent=ev.title;
+  $('modal-desc').textContent=ev.desc;
+  $('modal-effect').textContent='▸ 效果：'+ev.effect;
+  a42.style.display='none';modalFallback.style.display='none';
+  modalImg.classList.remove('error');modalImg.style.display='block';
+  if(ev.id==='answer'){
+    modalImg.style.display='none';a42.style.display='flex';
+    let n=0;
+    const iv=setInterval(()=>{
+      a42.textContent=pick(GLYPHS)+pick(GLYPHS);
+      if(++n>13){clearInterval(iv);a42.textContent='42';}
+    },95);
+  }else{
+    modalImg.onerror=()=>{modalImg.classList.add('error');modalFallback.style.display='flex';};
+    modalImg.src=ev.img;
+  }
+  modal.classList.add('open');
+  burst();
+  if(ev.run)ev.run();
+});
+function closeModal(){modal.classList.remove('open');}
+$('modal-close').addEventListener('click',closeModal);
+modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});
+addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+/* ================= 环境事件 ================= */
+(function ambient(){
+  if(!modal.classList.contains('open')){
+    const r=Math.random();
+    if(r<.28){burst();toast('⚠ 亚以太干扰：解码器出现乱码（它本来就是）');}
+    else if(r<.48)toast('一束光从旁边超了过去，看起来很急');
+    else if(r<.66)toast('导航提示：您正朝着「无聊」的方向飞行');
+    else if(r<.84){const m=pick(COMM);pushComm(m.s,m.t);}
+    else toast('旅程序列号即将用完 42%');
+  }
+  setTimeout(ambient,rand(30000,60000));
+})();
+
+/* ================= 定位计算 ================= */
+function sectorOf(x,z){
+  const gx=Math.floor((x+42)/12),gz=Math.floor((z+42)/12);
+  return ((gx%9+9)%9+1)+String.fromCharCode(65+(gz%15+15)%15);
+}
+function armOf(x,z){
+  const r=Math.hypot(x,z);
+  if(r<3.5)return '银心区';
+  if(r>27)return '星际空间';
+  let local=(Math.atan2(z,x)+galaxyAngle)%(Math.PI*2);
+  if(local<0)local+=Math.PI*2;
+  return ARM_NAMES[Math.round(local/(Math.PI*2/5))%5];
+}
+
+/* ================= 主循环 ================= */
+const earthClock=$('earth-clock'),shipClock=$('ship-clock'),timeDelta=$('time-delta'),stardateEl=$('stardate');
+const navX=$('nav-x'),navY=$('nav-y'),navZ=$('nav-z'),navArm=$('nav-arm'),navSector=$('nav-sector'),navCenter=$('nav-center');
+const pName=$('planet-name'),pType=$('planet-type'),pDist=$('planet-dist'),pBear=$('planet-bear'),pDesc=$('planet-desc');
+const hudSpeed=$('hud-speed'),hudHeading=$('hud-heading'),hudGamma=$('hud-gamma');
+const fwd=new THREE.Vector3(),right=new THREE.Vector3(),acc=new THREE.Vector3(),up=new THREE.Vector3(0,1,0);
+const camTarget=new THREE.Vector3(),lookAt=new THREE.Vector3(),tmpV=new THREE.Vector3(),camInv=new THREE.Quaternion();
+const fmtDelta=s=>{s=Math.max(0,s);return '+'+p2(Math.floor(s/3600))+':'+p2(Math.floor(s%3600/60))+':'+p2(Math.floor(s%60));};
+let nearest=null,nearestDist=0,edgeWarned=0;
+
+function tick(){
+  requestAnimationFrame(tick);
+  const rawDt=Math.min(clock.getDelta(),.05);
+  const dt=rawDt*timeScale;
+
+  /* --- 驾驶 --- */
+  fwd.set(Math.sin(ship.yaw),0,Math.cos(ship.yaw));
+  right.crossVectors(up,fwd);
+  acc.set(0,0,0);
+  if(key('w'))acc.addScaledVector(fwd,14);
+  if(key('s'))acc.addScaledVector(fwd,-9);
+  if(key('q'))acc.addScaledVector(right,-6);
+  if(key('e'))acc.addScaledVector(right,6);
+  if(key('r'))acc.y+=7;
+  if(key('f'))acc.y-=7;
+  if(key('a'))ship.yaw+=1.5*dt;
+  if(key('d'))ship.yaw-=1.5*dt;
+  ship.vel.addScaledVector(acc,dt);
+  ship.vel.multiplyScalar(Math.exp(-.55*dt));           // 太空微阻力（部分物理）
+  if(ship.vel.length()>MAXV)ship.vel.setLength(MAXV);
+  ship.pos.addScaledVector(ship.vel,dt);
+  ship.pos.y=clamp(ship.pos.y,-14,14);
+  const rr=Math.hypot(ship.pos.x,ship.pos.z);
+  if(rr>42){
+    tmpV.set(-ship.pos.x,0,-ship.pos.z).normalize();
+    ship.vel.addScaledVector(tmpV,12*dt);
+    if(Date.now()-edgeWarned>12000){edgeWarned=Date.now();toast('已到达漫游指南图谱边缘：再往外就是没画的部分');}
+  }
+
+  /* --- 星系与飞船 --- */
+  galaxyAngle+=.02*dt;
+  galaxy.rotation.y=galaxyAngle;
+  shipGroup.position.copy(ship.pos);
+  shipGroup.rotation.y=ship.yaw;
+  const spFrac=ship.vel.length()/MAXV;
+  engineGlow.material.opacity=.3+(key('w')?.55:0)+spFrac*.25;
+  engineGlow.scale.setScalar(.9+(key('w')?.7:0)+spFrac*.6);
+
+  /* --- 相机 --- */
+  const ang=ship.yaw+Math.PI+camTheta;
+  camTarget.set(
+    ship.pos.x+Math.sin(ang)*Math.cos(camPhi)*camDist,
+    ship.pos.y+Math.sin(camPhi)*camDist,
+    ship.pos.z+Math.cos(ang)*Math.cos(camPhi)*camDist
+  );
+  camera.position.lerp(camTarget,1-Math.pow(.0001,rawDt));
+  lookAt.copy(ship.pos).addScaledVector(fwd,2.5);
+  if(shakeAmt>0){
+    shakeAmt-=rawDt*1.1;
+    lookAt.x+=rand(-1,1)*shakeAmt*.5;
+    lookAt.y+=rand(-1,1)*shakeAmt*.5;
+  }
+  camera.lookAt(lookAt);
+  camera.fov=62+spFrac*16;
+  camera.updateProjectionMatrix();
+
+  /* --- 时间膨胀 --- */
+  const beta=spFrac*.9;
+  const gamma=1/Math.sqrt(1-beta*beta);
+  earthElapsed+=rawDt;
+  shipElapsed+=dt/(gamma*extraGamma);
+  galaxy.userData.starMat.uniforms.uTime.value+=rawDt;
+
+  /* --- HUD：时间 --- */
+  earthClock.textContent=(d=>p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds()))(new Date(earthStart+earthElapsed*1000));
+  shipClock.textContent=(d=>p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds()))(new Date(earthStart+shipElapsed*1000));
+  timeDelta.textContent=fmtDelta(earthElapsed-shipElapsed);
+  stardateEl.textContent=(42000+(earthElapsed+stardateOffset)*.42).toFixed(2);
+
+  /* --- HUD：定位 --- */
+  navX.textContent=(ship.pos.x>=0?'+':'')+(ship.pos.x*KPC).toFixed(2)+' kpc';
+  navY.textContent=(ship.pos.y>=0?'+':'')+(ship.pos.y*KPC).toFixed(2)+' kpc';
+  navZ.textContent=(ship.pos.z>=0?'+':'')+(ship.pos.z*KPC).toFixed(2)+' kpc';
+  navArm.textContent=armOf(ship.pos.x,ship.pos.z);
+  navSector.textContent=sectorOf(ship.pos.x,ship.pos.z);
+  navCenter.textContent=(rr*KPC).toFixed(2)+' kpc';
+  hudSpeed.textContent=(spFrac*.9).toFixed(2)+'c';
+  let hdg=Math.round(ship.yaw*180/Math.PI)%360;if(hdg<0)hdg+=360;
+  hudHeading.textContent=p2(0)+String(hdg).padStart(3,'0')+'°';
+  hudGamma.textContent='γ '+(gamma*extraGamma).toFixed(3);
+
+  /* --- 最近星球 --- */
+  nearest=null;nearestDist=1e9;
+  for(const po of planetObjs){
+    const wa=po.data.a-galaxyAngle;
+    tmpV.set(Math.cos(wa)*po.data.r,po.data.y,Math.sin(wa)*po.data.r);
+    const d=tmpV.distanceTo(ship.pos);
+    if(d<nearestDist){nearestDist=d;nearest={po,world:tmpV.clone()};}
+  }
+  if(nearest){
+    const p=nearest.po.data;
+    if(pName.textContent!==p.name)pName.textContent=p.name;
+    if(pType.textContent!==p.type)pType.textContent=p.type;
+    if(pDesc.textContent!==p.desc)pDesc.textContent=p.desc;
+    pDist.textContent=(nearestDist*KPC).toFixed(2)+' kpc';
+    tmpV.copy(nearest.world).sub(ship.pos);
+    camInv.copy(camera.quaternion).invert();
+    tmpV.applyQuaternion(camInv);
+    const bd=Math.atan2(tmpV.x,-tmpV.z)*180/Math.PI;
+    pBear.textContent=Math.abs(bd)<10?'▲ 正前方':((bd>0?'▶ ':'◀ ')+Math.abs(bd).toFixed(0)+'°');
+    marker.visible=true;
+    marker.position.copy(nearest.world);
+    marker.quaternion.copy(camera.quaternion);
+    marker.scale.setScalar(1+Math.sin(performance.now()*.004)*.1);
+    nearest.po.glow.material.opacity=.55+Math.sin(performance.now()*.004)*.3;
+  }
+
+  renderer.render(scene,camera);
+}
+tick();
+
+/* ================= 开机自检 ================= */
+pushComm('银河漫游指南','欢迎搭便车。本指南合法且完全无害（大部分情况）。');
+pushComm('系统自检','引擎 ▮ · 导航 ▮ · 毛巾 ▯ —— 2/3 通过');
+(function boot(){
+  const lines=[
+    '> 银河漫游指南 v42.0 启动中',
+    '> 挂载亚以太网卡 .......... OK',
+    '> 校验毛巾存在性 .......... 失败（已忽略）',
+    '> 加载旋臂地图（5 条）..... OK',
+    '> 时间膨胀补偿 ............ 42%',
+    '> DON\'T PANIC'
+  ];
+  const el=$('boot-text');
+  let li=0,ci=0,out='';
+  (function type(){
+    if(li>=lines.length){
+      setTimeout(()=>{$('boot').classList.add('done');setTimeout(()=>$('boot').remove(),900);},500);
+      return;
+    }
+    out+=lines[li][ci];
+    el.textContent=out;
+    ci++;
+    if(ci>=lines[li].length){out+='\n';li++;ci=0;setTimeout(type,120);}
+    else setTimeout(type,14);
+  })();
+})();
+})();
+</script>
+</body>
+</html>
