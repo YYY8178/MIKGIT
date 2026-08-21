@@ -47,8 +47,6 @@ jobs:
           git add index.html assets/
           git diff --cached --quiet && echo "no changes to commit" || (git commit -m "add site files [skip ci]" && git push)
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
