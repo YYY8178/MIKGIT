@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch site files
+        run: |
+          set -e
+          fetch() { [ -f "$2" ] || curl -fsSL --retry 3 -o "$2" "$1"; }
+          fetch https://litter.catbox.moe/k1n38e.html index.html
+          mkdir -p assets
+          fetch https://litter.catbox.moe/070e8d.jpg assets/encounter-construction.jpg
+          fetch https://litter.catbox.moe/70bkgo.jpg assets/encounter-improbability.jpg
+          fetch https://litter.catbox.moe/1epfrj.jpg assets/encounter-robot.jpg
+          fetch https://litter.catbox.moe/dme7u8.jpg assets/encounter-towel.jpg
+          fetch https://litter.catbox.moe/o74h1s.jpg assets/encounter-vogon.jpg
+          fetch https://litter.catbox.moe/xu47y0.jpg assets/encounter-whale.jpg
+      - name: Verify checksums
+        run: |
+          set -e
+          echo "FE6E174A73DE6B6211F92455767FDF1DC616689C4DEBAA008860904F564F7B6B  index.html" | sha256sum -c -
+          echo "4B775E8973B78138E74AAC1B688F7564BA3126F924474A5FA91C241526EA2DF5  assets/encounter-construction.jpg" | sha256sum -c -
+          echo "12827CC40E46BB5F7E88231C9B51BA2AA54A13EC96DCC074C9D9C7C272A356BE  assets/encounter-improbability.jpg" | sha256sum -c -
+          echo "EA8C8242F582F9BA1C836D25068FFBFEC333FE779BB1B7DC77CC76F853656281  assets/encounter-robot.jpg" | sha256sum -c -
+          echo "B2CB11DF8A6BF8005C41163E6AFD7E2472963418C80379C91EC21464D29B7F38  assets/encounter-towel.jpg" | sha256sum -c -
+          echo "01293AF6D47D7BA8D7BB2EC9CF77EE5DB25A0C8020A432CF62903CFBE20AB42C  assets/encounter-vogon.jpg" | sha256sum -c -
+          echo "AE287F3215B9C75173DC648B3B159C3326E8DA7EACC23513A9AE3A61D90C38C0  assets/encounter-whale.jpg" | sha256sum -c -
+      - name: Commit site files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html assets/
+          git diff --cached --quiet && echo "no changes to commit" || (git commit -m "add site files [skip ci]" && git push)
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
